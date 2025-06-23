@@ -1,9 +1,10 @@
 # main.py
 import time
-from oriented_graph import create_graph, draw_graph
-from oriented_PPA import physarum_algorithm
+from restricted_graph import create_graph, draw_graph
+from restricted_PPA import physarum_algorithm
 
 def main():
+    min_capacity = 6
     suppliers_nodes_list = [1, 2, 3]
     dc_nodes_list = [4, 5, 6, 7]
     retail_nodes_list = [8, 9]
@@ -27,7 +28,7 @@ def main():
 
     start_time = time.time()
     G = create_graph(suppliers_nodes_list, dc_nodes_list, retail_nodes_list, edgelist)
-    graphs = physarum_algorithm(G, demand_data, effective_distance_func, EPSILON, get_subgraphs=True)
+    graphs = physarum_algorithm(G, demand_data, effective_distance_func, EPSILON, get_subgraphs=True, min_capacity= min_capacity)
     
     for g in graphs:
         print(f"Subgraph for supplier {g.graph['s_id']}:")

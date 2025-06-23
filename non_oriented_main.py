@@ -19,7 +19,7 @@ def main():
     ]
     demand_data = {
         1: {8:5, 9:12},
-        2: {8:8, 9:0},
+        2: {8:16, 9:0},
         3: {8:6, 9:6}
     }
     effective_distance_func = lambda Q: 5 + 3 * (2.718281828**(-0.3 * Q))

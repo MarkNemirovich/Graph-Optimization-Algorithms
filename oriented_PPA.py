@@ -26,17 +26,20 @@ def calculate_node_pressures(g):
         # Числитель рассчитывается как сумма произведений проводимости ребра,
         # делённой на длину ребра, и давления на соседнем узле:
         # Знаменатель — это сумма значений проводимости рёбер, делённой на их длину для всех соседей:
-        for neighbour in g.predecessors(node):
-            data = g.edges[neighbour, node]
-            numerator += data['conductivity'] / data['length'] * g.nodes[neighbour]['pressure']
-            denominator += data['conductivity'] / data['length']
-        # Давление для узла обновляется как отношение числителя и знаменателя.
-        # Это давление зависит от давления соседей, а также от спроса/предложения,
-        # если узел является поставщиком или розничной точкой.
+        # Учитываем как входящие, так и исходящие рёбра
+        for neighbour in set(g.predecessors(node)).union(g.successors(node)):
+            if (neighbour, node) in g.edges:  # Входящее ребро
+                data = g.edges[neighbour, node]
+                numerator += data['conductivity'] / data['length'] * g.nodes[neighbour]['pressure']
+                denominator += data['conductivity'] / data['length']
+            if (node, neighbour) in g.edges:  # Исходящее ребро
+                data = g.edges[node, neighbour]
+                numerator += data['conductivity'] / data['length'] * g.nodes[neighbour]['pressure']
+                denominator += data['conductivity'] / data['length']
         if denominator != 0:
             g.nodes[node]['pressure'] = (numerator - equation_right) / denominator
         else:
-            g.nodes[node]['pressure'] = 0  # или np.nan / equation_right / значение по умолчанию
+            g.nodes[node]['pressure'] = 0
 
 # Обновляет значения потока и проводимости для рёбер графа.
 # Поток между двумя узлами пропорционален разности их давлений,

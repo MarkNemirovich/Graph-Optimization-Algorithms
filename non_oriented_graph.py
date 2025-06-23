@@ -76,7 +76,7 @@ def draw_graph(G, edge_label_attr='flow'):
     # Оставляем только рёбра с flow >= 1
     edges_to_draw = [
         (u, v) for u, v, d in G.edges(data=True)
-        #if d.get(edge_label_attr, 0) >= 1
+     #   if d.get(edge_label_attr, 0) >= 1
     ]
 
     # Рисуем узлы и рёбра
@@ -87,7 +87,7 @@ def draw_graph(G, edge_label_attr='flow'):
     edge_labels = {
         (u, v): f"{d[edge_label_attr]:.2f}"
         for u, v, d in G.edges(data=True)
-    #    if d.get(edge_label_attr, 0) >= 1
+       if d.get(edge_label_attr, 0) >= 1
     }
     nx.draw_networkx_edge_labels(
         G, pos, edge_labels=edge_labels, ax=ax, font_size=8

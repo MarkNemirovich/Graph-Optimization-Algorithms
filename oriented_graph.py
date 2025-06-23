@@ -105,6 +105,7 @@ def draw_graph(G, edge_label_attr='flow'):
     edge_labels = {
         (u, v): f"{d.get(edge_label_attr, 0):.2f}"
         for u, v, d in G.edges(data=True)
+       if d.get(edge_label_attr, 0) >= 1
     }
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, ax=ax, font_size=8)
 

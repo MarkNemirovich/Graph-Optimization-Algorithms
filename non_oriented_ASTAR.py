@@ -4,16 +4,6 @@ from collections import defaultdict
 import networkx as nx
 
 def astar_algorithm(G, demand_data, effective_distance_func, EPSILON, get_subgraphs=False):
-    """
-    Исправленный алгоритм A* с точным учетом demand_data
-    
-    Параметры:
-        G - граф NetworkX
-        demand_data - словарь спроса
-        effective_distance_func - функция для расчёта эффективного расстояния
-        EPSILON - порог сходимости (не используется)
-        get_subgraphs - возвращать ли подграфы
-    """
     # Инициализация потоков
     for u, v in G.edges():
         G.edges[u, v]['flow'] = 0.0
@@ -68,14 +58,5 @@ def astar_algorithm(G, demand_data, effective_distance_func, EPSILON, get_subgra
             except nx.NetworkXNoPath:
                 print(f"Путь не найден: {supplier} -> {retail_node}")
                 continue
-
-    # Проверка выполнения спроса
-    print("\nПроверка выполнения спроса:")
-    for supplier in demand_data:
-        for retail_node in demand_data[supplier]:
-            req = demand_data[supplier][retail_node]
-            fulfilled_vol = fulfilled[supplier][retail_node]
-            if req > 0:
-                print(f"{supplier} -> {retail_node}: требуется {req}, выполнено {fulfilled_vol}")
 
     return G

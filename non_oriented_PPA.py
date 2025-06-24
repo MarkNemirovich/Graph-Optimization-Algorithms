@@ -108,7 +108,7 @@ def calculate_term_criteria(graphs):
 # Алгоритм выполняет несколько итераций, в каждой из которых рассчитывает давление в узлах,
 # обновляет потоки и проводимости рёбер, а затем обновляет длины рёбер.
 def physarum_algorithm(G, demand_data, effective_distance_function, epsilon):
-    graphs = create_subgraphs(G, demand_data)
+    graphs = create_subgraphs(G)
     termination_criteria_met = False
     # iteration = 0
     while not termination_criteria_met:

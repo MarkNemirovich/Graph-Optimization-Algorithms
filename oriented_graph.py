@@ -1,15 +1,22 @@
 import networkx as nx
 import random
 import matplotlib.pyplot as plt
+import general_graph as gen
 
 # Создаёт граф с узлами разных типов (поставщики, распределительные центры, розничные точки)
 # и рёбрами с начальными значениями потока (flow = 0).
-def create_graph(suppliers_nodes_list, dc_nodes_list, retail_nodes_list, edgelist):
+def create_graph():
     G = nx.DiGraph()
-    G.add_nodes_from(suppliers_nodes_list, type='supplier')
-    G.add_nodes_from(dc_nodes_list, type='dc')
-    G.add_nodes_from(retail_nodes_list, type='retail')
-    G.add_edges_from(edgelist, flow=0)
+    G.add_nodes_from(gen.suppliers_nodes_list, type='supplier')
+    G.add_nodes_from(gen.dc_nodes_list, type='dc')
+    G.add_nodes_from(gen.retail_nodes_list, type='retail')
+    G.add_edges_from(gen.edgelist, flow=0)
+    
+    for u, v in G.edges:
+        G.edges[u, v].update({
+            'flow': 0,
+            'pheromone': 1.0  # начальное значение феромона
+        })
     return G
 
 # Создаёт подграфы для каждого поставщика, который соединяется с распределительными центрами и розничными точками,
@@ -46,6 +53,7 @@ def create_subgraphs(G, demand_data):
             g.edges[u, v].update({
                 'flow': 0,
                 'conductivity': random.uniform(1e-6, 1),
+                'pheromone': G.edges[u, v].get('pheromone', 1.0),  # копия из оригинала
                 'prev_conductivity': 0,
                 'length': 1
             })
@@ -54,21 +62,8 @@ def create_subgraphs(G, demand_data):
 
     return graphs
 
-# Функция для равномерного распределения по оси X
-def spread(nodes, y, shift=1, margin=0.05):
-    n = len(nodes)
-    if n == 1:
-        return {nodes[0]: (0.5, y)}  # Центрируем один узел
-    return {
-        node: (
-            margin + i * (1 - 2 * margin) / (n - 1),  # равномерно отступаем от краёв
-            y + 0.5 * ((i % shift) - 1)  # вертикальное "дрожание" при shift > 1
-        )
-        for i, node in enumerate(nodes)
-    }
-
 # Вывод графа
-def draw_graph(G, edge_label_attr='flow', title = 'optimisation algorithm'):
+def draw_graph(G, edge_label_attr='flow', title = 'optimisation algorithm', solution = True, time = 0):
     fig, ax = plt.subplots(figsize=(16, 8))
     
     # Группируем узлы по типам
@@ -77,9 +72,9 @@ def draw_graph(G, edge_label_attr='flow', title = 'optimisation algorithm'):
     retails = [n for n, d in G.nodes(data=True) if d.get('type') == 'retail']
 
     pos = {}
-    pos.update(spread(suppliers, y=2.0, margin=0.01))
-    pos.update(spread(dcs, y=0.5, shift=2))
-    pos.update(spread(retails, y=0.0, margin=0.02))
+    pos.update(gen.spread(suppliers, y=2.0, margin=0.01))
+    pos.update(gen.spread(dcs, y=0.5, shift=2))
+    pos.update(gen.spread(retails, y=0.0, margin=0.02))
 
     # Цвета узлов
     node_colors = []
@@ -109,6 +104,6 @@ def draw_graph(G, edge_label_attr='flow', title = 'optimisation algorithm'):
     }
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, ax=ax, font_size=8)
 
-    ax.set_title(f"Oriented graph with edge labels: {edge_label_attr} for {title}", fontsize=14)
+    ax.set_title(f"Oriented graph with edge labels: {edge_label_attr} for {title} provide {'correct' if solution else 'wrong'} solution for {time:.4f}", fontsize=14)
     plt.tight_layout()
     plt.show()

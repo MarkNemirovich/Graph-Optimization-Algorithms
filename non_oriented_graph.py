@@ -55,7 +55,7 @@ def spread(nodes, y, shift=1, margin=0.05):
     }
 
 # Вывод графа
-def draw_graph(G, edge_label_attr='flow'):
+def draw_graph(G, edge_label_attr='flow', title = 'optimisation algorithm', solution = True):
     fig, ax = plt.subplots(figsize=(16, 8))
     
     # Группируем узлы по типам
@@ -100,6 +100,6 @@ def draw_graph(G, edge_label_attr='flow'):
         G, pos, edge_labels=edge_labels, ax=ax, font_size=8
     )
 
-    ax.set_title(f"Graph with edge labels: {edge_label_attr}", fontsize=14)
+    ax.set_title(f"Non-oriented graph with edge labels: {edge_label_attr} for {title} provide {'correct' if solution else 'wrong'} solution", fontsize=14)
     plt.tight_layout()
     plt.show()

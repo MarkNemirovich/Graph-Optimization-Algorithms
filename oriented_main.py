@@ -3,7 +3,14 @@ import time
 from oriented_graph import create_graph, draw_graph
 from oriented_PPA import physarum_algorithm
 from oriented_ACO import aco_algorithm
-# from non_oriented_BWO import imobwo_algorithm
+# from oriented_DJA import dijkstra_algorithm
+# from oriented_ASTAR import astar_algorithm
+def time_counter(G, algo, algo_name, demand_data, effective_distance_func, EPSILON):
+    start_time = time.time()
+    new_g = algo(G, demand_data, effective_distance_func, EPSILON)
+    end_time = time.time()
+    print(f"For {algo_name} execution time: {end_time - start_time:.4f}s")
+    return new_g
 
 def main():
     suppliers_nodes_list = [1, 2, 3]
@@ -27,38 +34,19 @@ def main():
     effective_distance_func = lambda Q: 5 + 3 * (2.718281828**(-0.3 * Q))
     EPSILON = 1e-2
 
-    start_time = time.time()
-    G = create_graph(suppliers_nodes_list, dc_nodes_list, retail_nodes_list, edgelist)
+    G = create_graph(suppliers_nodes_list, dc_nodes_list, retail_nodes_list, edgelist)    
     
-    str = input()
-    if (str == 'ppa'):
-        graphs = physarum_algorithm(G, demand_data, effective_distance_func, EPSILON, get_subgraphs=True)
-    elif str == 'aco':
-        graphs = aco_algorithm(G, demand_data, effective_distance_func, EPSILON, get_subgraphs=True)
-    
-    # print("=== Проверка потоков поставщиков ===")
-    # for g in graphs:
-    #     sid = g.graph['s_id']
-    #     expected = sum(g.nodes[sid]['demand'].values())
-    #     outflow = sum(g.edges[sid, v]['flow'] for _, v in g.out_edges(sid))
-    #     print(f"Supplier {sid}: expected {expected}, actual outflow {outflow:.2f}")
-    
-    # for g in graphs:
-    #     print(f"Subgraph for supplier {g.graph['s_id']}:")
-    #     print("Nodes:", list(g.nodes))
-    #     print("Edges:", list(g.edges))
-    
-    end_time = time.time()
-    print(f"Execution time: {end_time - start_time:.4f}s")
+    aco_G = time_counter(G.copy(), aco_algorithm, 'ant colony algorithm', demand_data, effective_distance_func, EPSILON)
+    ppa_G = time_counter(G.copy(), physarum_algorithm, 'physarum algorithm', demand_data, effective_distance_func, EPSILON)
+    # dja_G = time_counter(G.copy(), dijkstra_algorithm, 'dijkstra algorithm', demand_data, effective_distance_func, EPSILON)
+    # astar_G = time_counter(G.copy(), astar_algorithm, 'astar algorithm', demand_data, effective_distance_func, EPSILON)    
 
-    # for g in graphs:
-    #     print(f"Subnetwork = {g.graph['s_id']}")
-    #     print(sorted(g.edges.data('flow'), key=lambda x: x[2], reverse=True))
-    # print("Global edges flow:")
-    # print(sorted(G.edges.data('flow'), key=lambda x: x[2], reverse=True))
 
-    draw_graph(G, edge_label_attr='flow')            # для отображения потока
-    # draw_graph(G, eфсщdge_label_attr='pheromone')            # для отображения потока
+    draw_graph(aco_G, edge_label_attr='flow', title='ant colony algorithm')            # для отображения потока
+    draw_graph(ppa_G, edge_label_attr='flow', title='physarum algorithm')            # для отображения потока
+    # draw_graph(dja_G, edge_label_attr='flow', title='dijkstra algorithm')            # для отображения потока
+    # draw_graph(astar_G, edge_label_attr='flow', title='astar algorithm')            # для отображения потока
+
 
 if __name__ == '__main__':
     main()

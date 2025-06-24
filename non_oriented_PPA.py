@@ -101,16 +101,16 @@ def calculate_term_criteria(graphs):
         for i, j, data in g.edges.data():
             total_diff += abs(data['conductivity'] - data['prev_conductivity'])
     
-    print(f'Total_diff: {total_diff}')
+    # print(f'Total_diff: {total_diff}')
     return total_diff
 
 # Реализует алгоритм слизевика для оптимизации транспортных потоков.
 # Алгоритм выполняет несколько итераций, в каждой из которых рассчитывает давление в узлах,
 # обновляет потоки и проводимости рёбер, а затем обновляет длины рёбер.
-def physarum_algorithm(G, demand_data, effective_distance_function, epsilon, get_subgraphs=False):
+def physarum_algorithm(G, demand_data, effective_distance_function, epsilon):
     graphs = create_subgraphs(G, demand_data)
     termination_criteria_met = False
-    iteration = 0
+    # iteration = 0
     while not termination_criteria_met:
         for graph in graphs: # для каждого подграфа вычислить давление в узлах и обновить поток через ребра
             calculate_node_pressures(graph)
@@ -121,8 +121,8 @@ def physarum_algorithm(G, demand_data, effective_distance_function, epsilon, get
             # Обновление эффективной длины ребер
             update_edge_length(G, graph, effective_distance_function)
         termination_criteria_met = calculate_term_criteria(graphs) <= epsilon # условие завершения оптимизации
-        iteration+=1
-        for i, j in G.edges:
-            print(f"Iteration {iteration}. Final flow on edge {i}->{j}: {G.edges[i,j]['flow']:.6f}")        
-    if get_subgraphs:
-        return graphs
+        # iteration+=1
+        # for i, j in G.edges:
+        #     print(f"Iteration {iteration}. Final flow on edge {i}->{j}: {G.edges[i,j]['flow']:.6f}")
+            
+    return G

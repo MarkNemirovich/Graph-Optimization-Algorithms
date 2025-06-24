@@ -68,7 +68,9 @@ def aco_algorithm(G, demand_data, effective_distance_function, epsilon, get_subg
                 all_paths.append(ant_paths)
                 all_costs.append(total_cost)
 
-                if len(ant_paths) >= len(demand) * 0.5:  # если нашли хотя бы 50% маршрутов
+                # Проверяем, что все потребители обслужены
+                required_targets = {target for target, req in demand.items() if req > 0}
+                if required_targets.issubset(ant_paths.keys()):
                     if total_cost < best_solutions[supplier]['cost']:
                         best_solutions[supplier]['cost'] = total_cost
                         best_solutions[supplier]['solution'] = ant_paths
@@ -104,7 +106,8 @@ def aco_algorithm(G, demand_data, effective_distance_function, epsilon, get_subg
         best_solution = best_solutions[supplier]['solution']
         demand = graph.nodes[supplier]['demand']
 
-        if not best_solution:
+        required_targets = {target for target, req in demand.items() if req > 0}
+        if not best_solution or not required_targets.issubset(best_solution.keys()):
             # print(f"WARNING: No complete solution found for supplier {supplier}")
             continue
 

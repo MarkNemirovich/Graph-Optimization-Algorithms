@@ -117,7 +117,7 @@ def calculate_term_criteria(graphs):
 # Реализует алгоритм слизевика для оптимизации транспортных потоков.
 # Алгоритм выполняет несколько итераций, в каждой из которых рассчитывает давление в узлах,
 # обновляет потоки и проводимости рёбер, а затем обновляет длины рёбер.
-def physarum_algorithm(G, demand_data, effective_distance_function, epsilon, get_subgraphs=False):
+def physarum_algorithm(G, demand_data, effective_distance_function, epsilon):
     graphs = create_subgraphs = __import__('oriented_graph').create_subgraphs
     graphs = create_subgraphs(G, demand_data)
     termination_criteria_met = False
@@ -131,5 +131,4 @@ def physarum_algorithm(G, demand_data, effective_distance_function, epsilon, get
             # Обновление эффективной длины ребер
             update_edge_length(G, graph, effective_distance_function)
         termination_criteria_met = calculate_term_criteria(graphs) <= epsilon # условие завершения оптимизации
-    if get_subgraphs:
-        return graphs
+    return G

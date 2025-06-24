@@ -31,8 +31,9 @@ def calculate_total_flow(G, graphs):
         for i, j, flow in g.edges.data('flow'):
             if flow > 0:
                 G.edges[i, j]['flow'] += flow
+    return G
                 
-def aco_algorithm(G, demand_data, effective_distance_function, epsilon, get_subgraphs=False):
+def aco_algorithm(G, demand_data, effective_distance_function, epsilon):
     graphs = create_subgraphs(G, demand_data)
     init_feromones(graphs)    
     
@@ -68,7 +69,9 @@ def aco_algorithm(G, demand_data, effective_distance_function, epsilon, get_subg
                 all_paths.append(ant_paths)
                 all_costs.append(total_cost)
 
-                if len(ant_paths) >= len(demand) * 0.5:  # если нашли хотя бы 50% маршрутов
+                # Проверяем, что все потребители обслужены
+                required_targets = {target for target, req in demand.items() if req > 0}
+                if required_targets.issubset(ant_paths.keys()):
                     if total_cost < best_solutions[supplier]['cost']:
                         best_solutions[supplier]['cost'] = total_cost
                         best_solutions[supplier]['solution'] = ant_paths
@@ -78,7 +81,7 @@ def aco_algorithm(G, demand_data, effective_distance_function, epsilon, get_subg
             evaporate_pheromones(graph)
             reinforce_pheromones(graph, all_paths, all_costs)
             
-        print(f"Iteration {it+1}/{iterations}. Total cost: {total_g_cost}")
+        # print(f"Iteration {it+1}/{iterations}. Total cost: {total_g_cost}")
         if(abs(previous__g_cost - total_g_cost) <= epsilon): # условие завершения оптимизации
             break
         previous__g_cost = total_g_cost
@@ -90,7 +93,8 @@ def aco_algorithm(G, demand_data, effective_distance_function, epsilon, get_subg
         best_solution = best_solutions[supplier]['solution']
         demand = graph.nodes[supplier]['demand']
 
-        if not best_solution:
+        required_targets = {target for target, req in demand.items() if req > 0}
+        if not best_solution or not required_targets.issubset(best_solution.keys()):
             print(f"WARNING: No complete solution found for supplier {supplier}")
             continue
 
@@ -100,8 +104,7 @@ def aco_algorithm(G, demand_data, effective_distance_function, epsilon, get_subg
                 u, v = path[i], path[i + 1]
                 graph.edges[u, v]['flow'] += demand_val
 
-    calculate_total_flow(G, graphs)
-    return graphs if get_subgraphs else None
+    return calculate_total_flow(G, graphs)
 
 
 def construct_path(graph, start, end, retries=3):

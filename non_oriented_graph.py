@@ -10,6 +10,12 @@ def create_graph(suppliers_nodes_list, dc_nodes_list, retail_nodes_list, edgelis
     G.add_nodes_from(dc_nodes_list, type='dc')
     G.add_nodes_from(retail_nodes_list, type='retail')
     G.add_edges_from(edgelist, flow=0)
+    
+    for u, v in G.edges:
+        G.edges[u, v].update({
+            'flow': 0,
+            'pheromone': 1.0  # начальное значение феромона
+        })
     return G
 
 # Создаёт подграфы для каждого поставщика, который соединяется с распределительными центрами и розничными точками,
@@ -26,6 +32,7 @@ def create_subgraphs(G, demand_data):
             g.edges[i, j].update({
                 'flow': 0,
                 'conductivity': random.uniform(1e-6, 1),
+                'pheromone': G.edges[i, j].get('pheromone', 1.0),  # копия из оригинала
                 'prev_conductivity': 0,
                 'length': 1
             })

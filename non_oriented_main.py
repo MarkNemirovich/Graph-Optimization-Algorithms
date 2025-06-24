@@ -2,6 +2,8 @@
 import time
 from non_oriented_graph import create_graph, draw_graph
 from non_oriented_PPA import physarum_algorithm
+from non_oriented_ACO import aco_algorithm
+# from non_oriented_BWO import imobwo_algorithm
 
 def main():
     suppliers_nodes_list = [1, 2, 3]
@@ -27,20 +29,29 @@ def main():
 
     start_time = time.time()
     G = create_graph(suppliers_nodes_list, dc_nodes_list, retail_nodes_list, edgelist)
-    graphs = physarum_algorithm(G, demand_data, effective_distance_func, EPSILON, get_subgraphs=True)
+
+    str = input()
+    if (str == 'ppa'):
+        graphs = physarum_algorithm(G, demand_data, effective_distance_func, EPSILON, get_subgraphs=True)
+    elif str == 'aco':
+        graphs = aco_algorithm(G, demand_data, effective_distance_func, EPSILON, get_subgraphs=True)
+    # else: 
+    #     graphs = imobwo_algorithm(G, demand_data, effective_distance_func, EPSILON, get_subgraphs=True)
+
     end_time = time.time()
     print(f"Execution time: {end_time - start_time:.4f}s")
 
-    for g in graphs:
-        print(f"Subnetwork = {g.graph['s_id']}")
-        print(sorted(g.edges.data('flow'), key=lambda x: x[2], reverse=True))
-    print("Global edges flow:")
-    print(sorted(G.edges.data('flow'), key=lambda x: x[2], reverse=True))
+    # for g in graphs:
+    #     print(f"Subnetwork = {g.graph['s_id']}")
+    #     print(sorted(g.edges.data('flow'), key=lambda x: x[2], reverse=True))
+    # print("Global edges flow:")
+    # print(sorted(G.edges.data('flow'), key=lambda x: x[2], reverse=True))
 
-    # draw_graph_flows(G, threshold=1)
-    draw_graph(G, edge_label_attr='flow')            # для отображения потока
-    # draw_graph(G, edge_label_attr='conductivity')    # для отображения проводимости
-    # draw_graph(G, edge_label_attr='length')          # для отображения длины
+    if (str == 'ppa'):
+        draw_graph(G, edge_label_attr='flow')            # для отображения потока
+    elif str == 'aco':
+        draw_graph(G, edge_label_attr='flow')            # для отображения потока
+        # draw_graph(G, eфсщdge_label_attr='pheromone')            # для отображения потока
 
 if __name__ == '__main__':
     main()

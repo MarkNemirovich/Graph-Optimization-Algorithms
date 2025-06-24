@@ -47,11 +47,8 @@ def main():
     # print("Global edges flow:")
     # print(sorted(G.edges.data('flow'), key=lambda x: x[2], reverse=True))
 
-    if (str == 'ppa'):
-        draw_graph(G, edge_label_attr='flow')            # для отображения потока
-    elif str == 'aco':
-        draw_graph(G, edge_label_attr='flow')            # для отображения потока
-        # draw_graph(G, eфсщdge_label_attr='pheromone')            # для отображения потока
+    draw_graph(G, edge_label_attr='flow')            # для отображения потока
+    # draw_graph(G, eфсщdge_label_attr='pheromone')            # для отображения потока
 
 if __name__ == '__main__':
     main()

@@ -2,7 +2,7 @@
 import time
 from oriented_graph import create_graph, draw_graph
 from oriented_PPA import physarum_algorithm
-from oriented_PSO import pso_algorithm
+from oriented_ACO import aco_algorithm
 # from non_oriented_BWO import imobwo_algorithm
 
 def main():
@@ -33,15 +33,15 @@ def main():
     str = input()
     if (str == 'ppa'):
         graphs = physarum_algorithm(G, demand_data, effective_distance_func, EPSILON, get_subgraphs=True)
-    # elif str == 'pso':
-    #     graphs = pso_algorithm(G, demand_data, effective_distance_func, EPSILON, get_subgraphs=True)
+    elif str == 'aco':
+        graphs = aco_algorithm(G, demand_data, effective_distance_func, EPSILON, get_subgraphs=True)
     
-    print("=== Проверка потоков поставщиков ===")
-    for g in graphs:
-        sid = g.graph['s_id']
-        expected = sum(g.nodes[sid]['demand'].values())
-        outflow = sum(g.edges[sid, v]['flow'] for _, v in g.out_edges(sid))
-        print(f"Supplier {sid}: expected {expected}, actual outflow {outflow:.2f}")
+    # print("=== Проверка потоков поставщиков ===")
+    # for g in graphs:
+    #     sid = g.graph['s_id']
+    #     expected = sum(g.nodes[sid]['demand'].values())
+    #     outflow = sum(g.edges[sid, v]['flow'] for _, v in g.out_edges(sid))
+    #     print(f"Supplier {sid}: expected {expected}, actual outflow {outflow:.2f}")
     
     # for g in graphs:
     #     print(f"Subgraph for supplier {g.graph['s_id']}:")
@@ -51,13 +51,14 @@ def main():
     end_time = time.time()
     print(f"Execution time: {end_time - start_time:.4f}s")
 
-    for g in graphs:
-        print(f"Subnetwork = {g.graph['s_id']}")
-        print(sorted(g.edges.data('flow'), key=lambda x: x[2], reverse=True))
-    print("Global edges flow:")
-    print(sorted(G.edges.data('flow'), key=lambda x: x[2], reverse=True))
+    # for g in graphs:
+    #     print(f"Subnetwork = {g.graph['s_id']}")
+    #     print(sorted(g.edges.data('flow'), key=lambda x: x[2], reverse=True))
+    # print("Global edges flow:")
+    # print(sorted(G.edges.data('flow'), key=lambda x: x[2], reverse=True))
 
     draw_graph(G, edge_label_attr='flow')            # для отображения потока
+    # draw_graph(G, eфсщdge_label_attr='pheromone')            # для отображения потока
 
 if __name__ == '__main__':
     main()

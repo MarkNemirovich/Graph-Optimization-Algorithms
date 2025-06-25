@@ -34,7 +34,7 @@ def calculate_total_flow(G, graphs):
     return G
                 
 def aco_algorithm(G, demand_data, effective_distance_function, epsilon):
-    graphs = create_subgraphs(G)
+    graphs = create_subgraphs(G, demand_data)
     init_feromones(graphs)    
     
     # Словарь для хранения лучших решений по каждому графу

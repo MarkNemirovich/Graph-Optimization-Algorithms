@@ -21,7 +21,7 @@ def create_graph():
 
 # Создаёт подграфы для каждого поставщика, который соединяется с распределительными центрами и розничными точками,
 # и добавляет характеристики рёбер и узлов.
-def create_subgraphs(G):
+def create_subgraphs(G, demand_data):
     graphs = []
     dc_and_retail = [n for n, t in G.nodes(data='type') if t in ('dc', 'retail')]
     suppliers = [n for n, t in G.nodes(data='type') if t == 'supplier']

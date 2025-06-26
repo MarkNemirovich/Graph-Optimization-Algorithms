@@ -21,12 +21,12 @@ def main():
     # dja_G, dja_G_correct, dja_G_time = time_counter(G.copy(), dijkstra_algorithm, 'dijkstra algorithm')
     # astar_G, astar_G_correct, astar_G_time = time_counter(G.copy(), astar_algorithm, 'astar algorithm')
     aco_G, aco_G_correct, aco_G_time = time_counter(G.copy(), aco_algorithm, 'ant colony algorithm')
-    ppa_G, ppa_G_correct, ppa_G_time = time_counter(G.copy(), physarum_algorithm, 'physarum algorithm')
+   # ppa_G, ppa_G_correct, ppa_G_time = time_counter(G.copy(), physarum_algorithm, 'physarum algorithm') #   File "<lambdifygenerated-1>", line 2, in _lambdifygenerated OverflowError: (34, 'Result too large')
  
     # draw_graph(dja_G, edge_label_attr='flow', title='dijkstra algorithm', solution = dja_G_correct, time = dja_G_time)
     # draw_graph(astar_G, edge_label_attr='flow', title='astar algorithm', solution = astar_G_correct, time = astar_G_time)
     draw_graph(aco_G, edge_label_attr='flow', title='ant colony algorithm', solution = aco_G_correct, time = aco_G_time)
-    draw_graph(ppa_G, edge_label_attr='flow', title='physarum algorithm', solution = ppa_G_correct, time = ppa_G_time)
+    # draw_graph(ppa_G, edge_label_attr='flow', title='physarum algorithm', solution = ppa_G_correct, time = ppa_G_time)
    
 if __name__ == '__main__':
     main()

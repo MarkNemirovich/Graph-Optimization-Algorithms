@@ -23,12 +23,17 @@ def create_graph():
 # и добавляет характеристики рёбер и узлов.
 def create_subgraphs(G, demand_data):
     graphs = []
-    dc_and_retail = [n for n, t in G.nodes(data='type') if t in ('dc', 'retail')]
     suppliers = [n for n, t in G.nodes(data='type') if t == 'supplier']
     for supplier in suppliers:
-        g = nx.subgraph(G, [supplier] + dc_and_retail).copy()
+        # Найдём все узлы, достижимые от поставщика supplier
+        reachable_nodes = nx.node_connected_component(G, supplier)
+        # Оставим только dc и retail из reachable
+        reachable_dc_retail = [n for n in reachable_nodes if G.nodes[n]['type'] in ('dc', 'retail')]
+        
+        g = nx.subgraph(G, [supplier] + reachable_dc_retail).copy()
         g.graph["s_id"] = supplier
-        g.nodes[supplier]['demand'] = gen.demand_data[supplier]
+        g.nodes[supplier]['demand'] = demand_data[supplier]
+        
         for i, j in g.edges:
             g.edges[i, j].update({
                 'flow': 0,

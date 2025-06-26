@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import random
 
 # Узлы
-suppliers_nodes_list = list(range(1,11))
+suppliers_nodes_list = list(range(10001,10101))
 dc_nodes_list = list(range(101, 111))
-retail_nodes_list = list(range(1001, 1011))
+retail_nodes_list = list(range(1001, 1101))
 
 # Рёбра
 edgelist = []
@@ -83,7 +83,7 @@ for supplier in suppliers_nodes_list:
 # }
 
 effective_distance_func = lambda Q: 5 + 3 * (2.718281828**(-0.3 * Q))
-EPSILON = 1e-3
+EPSILON = 1e-2
 
 
 # Функция для равномерного распределения по оси X

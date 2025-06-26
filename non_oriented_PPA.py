@@ -128,7 +128,7 @@ def physarum_algorithm(G, demand_data, effective_distance_function, epsilon):
             # print(f"PPA converged in {iter_num} iterations")
             break
         
-        if (iter_num+1) % check_every == 0:
+        if iter_num > 0:
                 # 1. собираем список удаляемых рёбер
                 edges_to_remove = [(i, j) for i, j in list(G.edges)
                                 if G.edges[i, j]['flow'] < 1]

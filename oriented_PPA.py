@@ -91,8 +91,7 @@ def physarum_algorithm(G, demand_data, effective_distance_function, epsilon):
     E_func  = lambdify(Q, E_sym,  'numpy')
     dE_func = lambdify(Q, dE_sym, 'numpy')
 
-    max_iterations = 100
-    check_every = 10
+    max_iterations = 5
 
     for iter_num in range(max_iterations):
         for g in graphs:
@@ -105,10 +104,10 @@ def physarum_algorithm(G, demand_data, effective_distance_function, epsilon):
             update_edge_length(G, g, E_func, dE_func)
 
         if term_criteria(graphs, epsilon):
-            print(f"PPA converged in {iter_num} iterations")
+            # print(f"PPA converged in {iter_num} iterations")
             break
 
-        if (iter_num + 1) % check_every == 0:
+        if iter_num > 0:
             edges_to_remove = [(i, j) for i, j in list(G.edges)
                                if G.edges[i, j]['flow'] < 1]
 
@@ -117,7 +116,7 @@ def physarum_algorithm(G, demand_data, effective_distance_function, epsilon):
                 for g in graphs:
                     g.remove_edges_from([e for e in edges_to_remove if g.has_edge(*e)])
                     _refresh_cache(g)
-                print(f"Iteration {iter_num}: removed {len(edges_to_remove)} edges")
+                # print(f"Iteration {iter_num}: removed {len(edges_to_remove)} edges")
         
 
     return G

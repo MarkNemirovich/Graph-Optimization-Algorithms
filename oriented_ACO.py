@@ -1,56 +1,72 @@
 import networkx as nx
 import numpy as np
-from random import choices, random
+from random import choices
 from oriented_graph import create_subgraphs
 
-alpha = 1      # важность феромона
-beta = 2       # важность эвристики (обратная длина)
-rho = 0.1      # коэффициент испарения
-Q_const = 100  # коэффициент усиления феромона
-num_ants = 30
-iterations = 100
+# ---------------------- параметры -----------------------------
+alpha = 1
+beta  = 2
+rho   = 0.10
+Q_const = 100
+
+num_ants = 1        # меньше муравьёв
+iterations = 1          # <<< SPEED-UP  (было 100)
+TOP_RATIO  = 0.30        # сколько лучших муравьёв усиливаем
+STAGNATE   = 1          # стоп, если нет улучшения N эпох
+# --------------------------------------------------------------
+
 
 def init_feromones(graphs):
+    """ставим pheromone и сразу кешируем эвристику eta=1/length."""
     for g in graphs:
         supplier = g.graph['s_id']
         demand_nodes = g.nodes[supplier]['demand'].keys()
 
-        for u, v in g.edges:
-            # Усиливаем феромон на ребре, если оно ведёт напрямую от поставщика к потребителю
-            if (u == supplier and v in demand_nodes) or (v == supplier and u in demand_nodes):
-                g.edges[u, v]['pheromone'] = 5.0  # усиленный феромон
+        for u, v, d in g.edges(data=True):
+            if u == supplier and v in demand_nodes:
+                d['pheromone'] = 5.0
             else:
-                g.edges[u, v]['pheromone'] = 1.0 + np.random.rand() * 0.1  # базовый феромон немного случайный
+                d['pheromone'] = 1.0 + np.random.rand() * 0.1
+            d['eta'] = 1.0 / d['length'] if d['length'] > 0 else 1.0
+            d.setdefault('flow', 0.0)      # чтобы дальше не проверять
 
-# Подсчитывает общий поток по всему графу, суммируя потоки, вычисленные на уровне подграфов.
-# Это позволяет обновить потоки на уровне всего графа с учётом всех локальных решений.
+
 def calculate_total_flow(G, graphs):
     for edge in G.edges:
-        G.edges[edge]['flow'] = 0
+        G.edges[edge]['flow'] = 0.0
     for g in graphs:
-        for i, j, flow in g.edges.data('flow'):
-            if flow > 0:
-                G.edges[i, j]['flow'] += flow
+        for u, v, d in g.edges(data=True):
+            if d['flow'] > 0:
+                G.edges[u, v]['flow'] += d['flow']
     return G
-                
+
+
 def aco_algorithm(G, demand_data, effective_distance_function, epsilon):
     graphs = create_subgraphs(G, demand_data)
-    init_feromones(graphs)    
-    
-    # Словарь для хранения лучших решений по каждому графу
-    best_solutions = {g.graph['s_id']: {'cost': float('inf'), 'solution': {}, 'graph': g} for g in graphs}
-    previous_g_cost = 0
+    init_feromones(graphs)
+
+    best_solutions = {g.graph['s_id']: {'cost': float('inf'), 'solution': {}}
+                      for g in graphs}
+
+    best_global   = float('inf')   # для критерия стагнации
+    stagnation_it = 0
+
     for it in range(iterations):
-        total_g_cost = 0
+        total_epoch_cost = 0.0
+
         for graph in graphs:
             supplier = graph.graph['s_id']
-            demand = graph.nodes[supplier]['demand']
-            all_paths = []
-            all_costs = []
+            demand   = graph.nodes[supplier]['demand']
+
+            # --- динамически подбираем число муравьёв -----------------
+            # num_ants = min(len([d for d in demand.values() if d > 0]) + 5, 5)
+            # ----------------------------------------------------------
+
+            all_paths, all_costs = [], []
 
             for _ in range(num_ants):
                 ant_paths = {}
-                total_cost = 0
+                approx_cost = 0.0     # считаем только по длинам
 
                 for target, required_flow in demand.items():
                     if required_flow == 0:
@@ -60,74 +76,83 @@ def aco_algorithm(G, demand_data, effective_distance_function, epsilon):
                         continue
                     ant_paths[target] = path
 
-                    flow_sum = 0
-                    for i in range(len(path) - 1):
-                        u, v = path[i], path[i + 1]
-                        flow_sum += effective_distance_function(graph.edges[u, v]['flow'])
-                    total_cost += flow_sum * required_flow
+                    path_len = sum(
+                        graph.edges[path[i], path[i + 1]]['length']
+                        for i in range(len(path) - 1)
+                    )
+                    approx_cost += path_len * required_flow
 
                 all_paths.append(ant_paths)
-                all_costs.append(total_cost)
+                all_costs.append(approx_cost)
 
-                # Проверяем, что все потребители обслужены
-                required_targets = {target for target, req in demand.items() if req > 0}
-                if required_targets.issubset(ant_paths.keys()):
-                    if total_cost < best_solutions[supplier]['cost']:
-                        best_solutions[supplier]['cost'] = total_cost
-                        best_solutions[supplier]['solution'] = ant_paths
-            
-            total_g_cost += total_cost
-            # Обновление феромонов после всех муравьёв
+            # -- выбираем top-k лучших по approx_cost -------------------
+            k = max(1, int(TOP_RATIO * len(all_costs)))
+            top_idx = np.argsort(all_costs)[:k]
+            # -----------------------------------------------------------
+
+            # пересчитываем «точную» цену для top-k и усиливаем
             evaporate_pheromones(graph)
-            reinforce_pheromones(graph, all_paths, all_costs)
-            
-        # print(f"Iteration {it+1}/{iterations}. Total cost: {total_g_cost}")
-        if(abs(previous_g_cost - total_g_cost) <= epsilon): # условие завершения оптимизации
-            break
-        previous_g_cost = total_g_cost
-        total_g_cost = 0
+            for idx in top_idx:
+                ant_paths = all_paths[idx]
+                exact_cost = 0.0
+                for target, path in ant_paths.items():
+                    required_flow = demand[target]
+                    flow_sum = 0.0
+                    for i in range(len(path) - 1):
+                        u, v = path[i], path[i + 1]
+                        flow_sum += effective_distance_function(
+                            graph.edges[u, v]['flow']
+                        )
+                    exact_cost += flow_sum * required_flow
 
-    # Применение лучших решений
+                reinforce_pheromones(graph, ant_paths, exact_cost)
+                total_epoch_cost += exact_cost
+
+                # запоминаем лучшее решение
+                if exact_cost < best_solutions[supplier]['cost']:
+                    best_solutions[supplier]['cost'] = exact_cost
+                    best_solutions[supplier]['solution'] = ant_paths
+
+        # ---------- критерий раннего выхода ----------------------------
+        if total_epoch_cost < best_global - 1e-3:
+            best_global   = total_epoch_cost
+            stagnation_it = 0
+        else:
+            stagnation_it += 1
+            if stagnation_it >= STAGNATE or best_global < epsilon:
+                break
+        # ----------------------------------------------------------------
+
+    # --- применяем лучшие найденные пути к потокам ----------------------
     for graph in graphs:
         supplier = graph.graph['s_id']
-        best_solution = best_solutions[supplier]['solution']
-        demand = graph.nodes[supplier]['demand']
+        demand   = graph.nodes[supplier]['demand']
+        best_sol = best_solutions[supplier]['solution']
 
-        required_targets = {target for target, req in demand.items() if req > 0}
-        if not best_solution or not required_targets.issubset(best_solution.keys()):
-            print(f"WARNING: No complete solution found for supplier {supplier}")
-            continue
-
-        for target, path in best_solution.items():
-            demand_val = demand[target]
+        for target, path in best_sol.items():
+            req = demand[target]
             for i in range(len(path) - 1):
                 u, v = path[i], path[i + 1]
-                graph.edges[u, v]['flow'] += demand_val
+                graph.edges[u, v]['flow'] += req
 
-    
     return calculate_total_flow(G, graphs)
 
 
 def construct_path(graph, start, end, retries=3):
+    """использует кешированную эвристику edge['eta']."""
     for _ in range(retries):
         path = [start]
-        visited = set(path)
-        current = start
+        visited, current = {start}, start
 
         while current != end:
-            neighbors = [
-                n for n in graph.neighbors(current)
-                if n not in visited and graph.has_edge(current, n)
-            ]
+            neighbors = [n for n in graph.neighbors(current)
+                         if n not in visited and graph.has_edge(current, n)]
             if not neighbors:
                 break
             weights = []
             for n in neighbors:
-                edge = graph.edges[current, n]
-                pheromone = edge['pheromone']
-                heuristic = 1 / edge['length'] if edge['length'] > 0 else 1
-                weight = (pheromone ** alpha) * (heuristic ** beta)
-                weights.append(weight)
+                d = graph.edges[current, n]
+                weights.append((d['pheromone'] ** alpha) * (d['eta'] ** beta))
 
             next_node = choices(neighbors, weights)[0]
             path.append(next_node)
@@ -136,6 +161,7 @@ def construct_path(graph, start, end, retries=3):
 
         if current == end:
             return path
+
     try:
         return nx.shortest_path(graph, start, end, weight='length')
     except nx.NetworkXNoPath:
@@ -143,15 +169,14 @@ def construct_path(graph, start, end, retries=3):
 
 
 def evaporate_pheromones(graph):
-    for u, v in graph.edges:
-        graph.edges[u, v]['pheromone'] *= (1 - rho)
+    for _, _, d in graph.edges(data=True):
+        d['pheromone'] *= (1 - rho)
 
 
-def reinforce_pheromones(graph, paths_list, costs_list):
-    for paths, cost in zip(paths_list, costs_list):
-        if cost == 0:
-            continue
-        for path in paths.values():
-            for i in range(len(path) - 1):
-                u, v = path[i], path[i + 1]
-                graph.edges[u, v]['pheromone'] += Q_const / cost
+def reinforce_pheromones(graph, paths_dict, cost):
+    if cost == 0:
+        return
+    for path in paths_dict.values():
+        for i in range(len(path) - 1):
+            u, v = path[i], path[i + 1]
+            graph.edges[u, v]['pheromone'] += Q_const / cost

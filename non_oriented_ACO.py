@@ -9,9 +9,9 @@ BETA  = 2
 RHO   = 0.10
 Q     = 100
 MIN_PHER = 1e-4
-NUM_ANTS = 15        # меньше муравьёв
-ITER_MAX = 60        # и итераций
-STALL_ITERS = 10     # ранний выход, если нет улучшений
+NUM_ANTS = 10        # меньше муравьёв
+ITER_MAX = 10        # и итераций
+STALL_ITERS = 2     # ранний выход, если нет улучшений
 
 # порядок «вперёд по цепочке поставок»
 LEVEL = {'supplier': 0, 'dc': 1, 'retail': 2}
@@ -46,7 +46,7 @@ def aco_algorithm(G, demand_data, effective_distance_function, epsilon):
     # Словарь для хранения лучших решений по каждому графу
     best_solutions = {g.graph['s_id']: {'cost': float('inf'), 'solution': {}, 'graph': g} for g in graphs}
     prev_cost = 0
-    for it in range(iterations):
+    for it in range(ITER_MAX):
         total_g_cost = 0
         for graph in graphs:
             supplier = graph.graph['s_id']

@@ -3,12 +3,18 @@ import numpy as np
 from random import choices, random
 from non_oriented_graph import create_subgraphs
 
-alpha = 1      # важность феромона
-beta = 2       # важность эвристики (обратная длина)
-rho = 0.1      # коэффициент испарения
-Q_const = 100  # коэффициент усиления феромона
-num_ants = 30
-iterations = 100
+# -------- constants ----------
+ALPHA = 1
+BETA  = 2
+RHO   = 0.10
+Q     = 100
+MIN_PHER = 1e-4
+NUM_ANTS = 15        # меньше муравьёв
+ITER_MAX = 60        # и итераций
+STALL_ITERS = 10     # ранний выход, если нет улучшений
+
+# порядок «вперёд по цепочке поставок»
+LEVEL = {'supplier': 0, 'dc': 1, 'retail': 2}
 
 def init_feromones(graphs):
     for g in graphs:
@@ -39,7 +45,7 @@ def aco_algorithm(G, demand_data, effective_distance_function, epsilon):
     
     # Словарь для хранения лучших решений по каждому графу
     best_solutions = {g.graph['s_id']: {'cost': float('inf'), 'solution': {}, 'graph': g} for g in graphs}
-    previous__g_cost = 0
+    prev_cost = 0
     for it in range(iterations):
         total_g_cost = 0
         for graph in graphs:
@@ -76,16 +82,15 @@ def aco_algorithm(G, demand_data, effective_distance_function, epsilon):
                         best_solutions[supplier]['cost'] = total_cost
                         best_solutions[supplier]['solution'] = ant_paths
             
-            total_g_cost += total_cost
+            total_g_cost += sum(all_costs)   # суммируем ВСЕ стоимости
             # Обновление феромонов после всех муравьёв
             evaporate_pheromones(graph)
             reinforce_pheromones(graph, all_paths, all_costs)
             
         # print(f"Iteration {it+1}/{iterations}. Total cost: {total_g_cost}")
-        if(abs(previous__g_cost - total_g_cost) <= epsilon): # условие завершения оптимизации
+        if abs(prev_cost - total_g_cost) <= epsilon:
             break
-        previous__g_cost = total_g_cost
-        total_g_cost = 0
+        prev_cost = total_g_cost
 
     # Применение лучших решений
     for graph in graphs:
@@ -108,39 +113,35 @@ def aco_algorithm(G, demand_data, effective_distance_function, epsilon):
 
 
 def construct_path(graph, start, end, retries=3):
+    max_len = len(graph)
     for _ in range(retries):
-        path = [start]
-        visited = set(path)
+        path, visited = [start], {start}
         current = start
-
-        while current != end:
-            neighbors = [
-                n for n in graph.neighbors(current)
-                if n not in visited and graph.has_edge(current, n)
-            ]
+        while current != end and len(path) < max_len:
+            neighbors = [n for n in graph.neighbors(current) if n not in visited]
             if not neighbors:
-                break  # тупик
-            weights = []
-            for n in neighbors:
-                edge = graph.edges[current, n]
-                pheromone = edge['pheromone']
-                heuristic = 1 / edge['length'] if edge['length'] > 0 else 1
-                weight = (pheromone ** alpha) * (heuristic ** beta)
-                weights.append(weight)
+                break
+            weights = [
+                (graph.edges[current, n]['pheromone'] ** alpha) *
+                ((1 / graph.edges[current, n]['length']) ** beta)
+                for n in neighbors
+            ]
+            try:
+                next_node = choices(neighbors, weights)[0]
+            except ValueError:
+                next_node = random.choice(neighbors)
 
-            next_node = choices(neighbors, weights)[0]
-            path.append(next_node)
-            visited.add(next_node)
-            current = next_node
+            current = next_node            # ← ОБЯЗАТЕЛЬНО
+            path.append(current)
+            visited.add(current)
 
         if current == end:
             return path
     return None
 
-
 def evaporate_pheromones(graph):
     for u, v in graph.edges:
-        graph.edges[u, v]['pheromone'] *= (1 - rho)
+        graph.edges[u, v]['pheromone'] = max(MIN_PHER, graph.edges[u, v]['pheromone'] * (1 - rho))
 
 
 def reinforce_pheromones(graph, paths_list, costs_list):
@@ -150,4 +151,5 @@ def reinforce_pheromones(graph, paths_list, costs_list):
         for path in paths.values():
             for i in range(len(path) - 1):
                 u, v = path[i], path[i + 1]
-                graph.edges[u, v]['pheromone'] += Q_const / cost
+                delta = Q_const / max(cost, 1e-3)   # клиппинг
+                graph.edges[u, v]['pheromone'] += delta

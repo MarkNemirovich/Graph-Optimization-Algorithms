@@ -39,7 +39,7 @@ def aco_algorithm(G, demand_data, effective_distance_function, epsilon):
     
     # Словарь для хранения лучших решений по каждому графу
     best_solutions = {g.graph['s_id']: {'cost': float('inf'), 'solution': {}, 'graph': g} for g in graphs}
-    previous__g_cost = 0
+    previous_g_cost = 0
     for it in range(iterations):
         total_g_cost = 0
         for graph in graphs:
@@ -81,10 +81,10 @@ def aco_algorithm(G, demand_data, effective_distance_function, epsilon):
             evaporate_pheromones(graph)
             reinforce_pheromones(graph, all_paths, all_costs)
             
-        print(f"Iteration {it+1}/{iterations}. Total cost: {total_g_cost}")
-        if(abs(previous__g_cost - total_g_cost) <= epsilon): # условие завершения оптимизации
+        # print(f"Iteration {it+1}/{iterations}. Total cost: {total_g_cost}")
+        if(abs(previous_g_cost - total_g_cost) <= epsilon): # условие завершения оптимизации
             break
-        previous__g_cost = total_g_cost
+        previous_g_cost = total_g_cost
         total_g_cost = 0
 
     # Применение лучших решений
@@ -120,7 +120,7 @@ def construct_path(graph, start, end, retries=3):
                 if n not in visited and graph.has_edge(current, n)
             ]
             if not neighbors:
-                break  # тупик
+                break
             weights = []
             for n in neighbors:
                 edge = graph.edges[current, n]
@@ -136,7 +136,10 @@ def construct_path(graph, start, end, retries=3):
 
         if current == end:
             return path
-    return None
+    try:
+        return nx.shortest_path(graph, start, end, weight='length')
+    except nx.NetworkXNoPath:
+        return None
 
 
 def evaporate_pheromones(graph):
